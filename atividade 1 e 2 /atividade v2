@@ -5,6 +5,9 @@ sintoma(falha_ignicao).
 sintoma(luz_check_engine).
 sintoma(luz_bateria).
 sintoma(barulho_motor).
+sintoma(superaquecimento_motor).
+sintoma(motor_engasgado).
+sintoma(ruidos_motor).
 
 % Possíveis causas de sintomas
 causa(falha_ignicao, bateria_fraca).
