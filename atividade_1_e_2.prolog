@@ -62,7 +62,18 @@ diagnostico(barulho_motor, falha_bielas) :-
 diagnostico(barulho_motor, pistoes_problema) :-
     sintoma(barulho_motor),
     leitura_sensor(rotacao_motor, normal).
+% Diagnóstico com múltiplos sintomas
+diagnostico_combinado(Sintoma1, Sintoma2, CausaCombinada) :-
+    sintoma(Sintoma1),
+    sintoma(Sintoma2),
+    causa(Sintoma1, Causa1),
+    causa(Sintoma2, Causa2),
+    combinar_causas(Causa1, Causa2, CausaCombinada).
 
+% Combinando causas de dois sintomas
+combinar_causas(bateria_fraca, alternador_defeito, problema_bateria_ou_alternador) :- !.
+combinar_causas(vela_ignicao_defeituosa, sistema_injecao_problema, problema_ignicao_ou_injecao) :- !.
+combinar_causas(falha_bielas, pistoes_problema, problema_motor) :- !.
 % Ações corretivas para os diagnósticos
 acao(bateria_fraca, recarregar_ou_substituir_bateria).
 acao(vela_ignicao_defeituosa, limpar_ou_substituir_velas).
@@ -72,6 +83,9 @@ acao(alternador_defeito, verificar_ou_substituir_alternador).
 acao(correia_acessorios_rompida, substituir_correia_acessorios).
 acao(falha_bielas, verificar_sistema_mecanico).
 acao(pistoes_problema, inspecionar_pistoes).
+acao(problema_bateria_ou_alternador, verificar_bateria_e_alternador).
+acao(problema_ignicao_ou_injecao, verificar_ignicao_ou_injecao).
+acao(problema_motor, verificar_motor).
 
 % Explicações do diagnóstico
 explicacao(bateria_fraca, "A tensão da bateria está abaixo de 12V.").
@@ -80,6 +94,9 @@ explicacao(sensor_oxigenio_falha, "O sensor de oxigênio está registrando valor
 explicacao(sistema_injecao_problema, "A luz de Check Engine está acesa, indicando problemas na injeção eletrônica.").
 explicacao(alternador_defeito, "A luz de bateria acesa e a tensão estão baixas, indicando possível falha no alternador.").
 explicacao(correia_acessorios_rompida, "A rotação do motor é anormal, indicando possível correia rompida.").
+explicacao(problema_bateria_ou_alternador, "A falha pode ser tanto na bateria quanto no alternador. Verifique ambos para determinar a causa.").
+explicacao(problema_ignicao_ou_injecao, "Há uma falha de ignição ou um problema no sistema de injeção eletrônica.").
+explicacao(problema_motor, "O problema pode ser causado por falha nas bielas ou pistões.").
 
 % Exemplo de leituras de sensores
 leitura_sensor(temperatura_motor, 105).
@@ -137,8 +154,9 @@ diagnostico1(Sintoma, Causa) :-
     causa(Sintoma, Causa).
 % Sistema principal de diagnóstico interativo
 % Sistema de diagnóstico completo
+% Diagnóstico com múltiplos sintomas combinados
 diagnosticar :-
-    write('Digite o sintoma observado (por exemplo, falha_ignicao, luz_check_engine, luz_bateria, barulho_motor): '),
+    write('Digite o sintoma(s) observado(s) (ex: falha_ignicao, luz_check_engine, luz_bateria, barulho_motor): '),
     read(Sintoma),
     (   sintoma(Sintoma)
     ->  findall(Causa, diagnostico1(Sintoma, Causa), Causas),
@@ -148,6 +166,23 @@ diagnosticar :-
         ;   write('Nenhuma causa identificada para o sintoma informado.'), nl
         )
     ;   write('Sintoma não reconhecido.'), nl
+    ),
+    % Verifica se há diagnóstico combinado
+    write('Deseja verificar um diagnóstico combinado? (sim/nao): '),
+    read(Resposta),
+    (   Resposta == sim
+    ->  write('Digite o segundo sintoma observado: '),
+        read(Sintoma2),
+        (   sintoma(Sintoma2)
+        ->  diagnostico_combinado(Sintoma, Sintoma2, CausaCombinada),
+            (   CausaCombinada \= []
+            ->  write('Diagnóstico combinado: '), nl,
+                listar_resultados([CausaCombinada])
+            ;   write('Nenhuma causa combinada identificada para os sintomas informados.'), nl
+            )
+        ;   write('Segundo sintoma não reconhecido.'), nl
+        )
+    ;   write('Nenhum diagnóstico combinado será realizado.'), nl
     ).
 
 % Listar as causas e ações corretivas
