@@ -8,6 +8,7 @@ sintoma(barulho_motor).
 sintoma(superaquecimento_motor).
 sintoma(motor_engasgado).
 sintoma(ruidos_motor).
+sintoma(perda_potencia).
 
 % Possíveis causas de sintomas
 causa(falha_ignicao, bateria_fraca).
@@ -24,32 +25,24 @@ causa(luz_bateria, correia_acessorios_rompida).
 causa(barulho_motor, falha_bielas).
 causa(barulho_motor, pistoes_problema).
 
-% Sensores disponíveis
-sensor(temperatura_motor).
-sensor(tensao_bateria).
-sensor(nivel_oleo).
-sensor(rotacao_motor).
-sensor(sensor_vibracao).
-sensor(sensor_oxigenio).  
+causa(ruidos_motor, falha_bielas).
+causa(ruidos_motor, problema_transmissao).
 
-% Limites críticos dos sensores
-limite_critico(temperatura_motor, 100, superaquecimento).  % Temperatura acima de 100°C
-limite_critico(tensao_bateria, 12, bateria_fraca).  % Tensão abaixo de 12V
-limite_critico(nivel_oleo, minimo, baixo_oleo).  % Nível de óleo baixo
-limite_critico(rotacao_motor, anormal, problema_injecao).  % Rotações anormais do motor
-limite_critico(sensor_vibracao, anormal, problema_mecanico).  % Vibrações anormais no motor
-limite_critico(sensor_oxigenio, fora_da_faixa, sensor_oxigenio_falha).  % Sensor de oxigênio fora da faixa
+causa(perda_potencia, problema_transmissao).
+causa(perda_potencia, falha_injecao).
+
+
 
 
 
 
 % Diagnóstico com múltiplos sintomas combinados
-diagnostico_combinado(Sintoma1, Sintoma2, CausaCombinada) :-
-    sintoma(Sintoma1),
-    sintoma(Sintoma2),
-    causa(Sintoma1, Causa1),
-    causa(Sintoma2, Causa2),
-    combinar_causas(Causa1, Causa2, CausaCombinada).
+diagnostico_combinado(Sintomas, DiagnosticosUnicos) :-
+    findall(Causa, (
+        member(Sintoma, Sintomas),
+        diagnostico(Sintoma, Causa)
+    ), DiagnosticosComDuplicatas),
+    sort(DiagnosticosComDuplicatas, DiagnosticosUnicos).  % Remove duplicatas
 
 % Combinando causas de dois sintomas
 combinar_causas(bateria_fraca, alternador_defeito, problema_bateria_ou_alternador) :- !.
@@ -79,7 +72,21 @@ explicacao(correia_acessorios_rompida, "A rotação do motor é anormal, indican
 explicacao(problema_bateria_ou_alternador, "A falha pode ser tanto na bateria quanto no alternador. Verifique ambos para determinar a causa.").
 explicacao(problema_ignicao_ou_injecao, "Há uma falha de ignição ou um problema no sistema de injeção eletrônica.").
 explicacao(problema_motor, "O problema pode ser causado por falha nas bielas ou pistões.").
+% Sensores disponíveis
+sensor(temperatura_motor).
+sensor(tensao_bateria).
+sensor(nivel_oleo).
+sensor(rotacao_motor).
+sensor(sensor_vibracao).
+sensor(sensor_oxigenio).  
 
+% Limites críticos dos sensores
+limite_critico(temperatura_motor, 100, superaquecimento).  % Temperatura acima de 100°C
+limite_critico(tensao_bateria, 12, bateria_fraca).  % Tensão abaixo de 12V
+limite_critico(nivel_oleo, minimo, baixo_oleo).  % Nível de óleo baixo
+limite_critico(rotacao_motor, anormal, problema_injecao).  % Rotações anormais do motor
+limite_critico(sensor_vibracao, anormal, problema_mecanico).  % Vibrações anormais no motor
+limite_critico(sensor_oxigenio, fora_da_faixa, sensor_oxigenio_falha).  % Sensor de oxigênio fora da faixa
 % Exemplo de leituras de sensores
 leitura_sensor(temperatura_motor, 105).
 leitura_sensor(tensao_bateria, 11.8).
@@ -89,153 +96,154 @@ leitura_sensor(sensor_oxigenio, fora_da_faixa).
 leitura_sensor(sensor_vibracao, anormal).
 % Probabilidade de causas
 probabilidade(falha_ignicao, bateria_fraca) :-
-    leitura_sensor(tensao_bateria, T), T < 12,
-    !.  % Corte para garantir que não seja checado para outras causas.
+    leitura_sensor(tensao_bateria, T), T < 12, !.
+      % Corte para garantir que não seja checado para outras causas.
 
 probabilidade(falha_ignicao, vela_ignicao_defeituosa) :-
     sintoma(falha_ignicao),
-    leitura_sensor(tensao_bateria, T), T >= 12,
-    !.  % Corte para evitar diagnóstico incorreto.
+    leitura_sensor(tensao_bateria, T), T >= 12.
+      % Corte para evitar diagnóstico incorreto.
 
 probabilidade(luz_check_engine, sensor_oxigenio_falha) :-
-    leitura_sensor(sensor_oxigenio, fora_da_faixa),
-    !.  % Corte para garantir que falha no sensor de oxigênio seja priorizada.
+    leitura_sensor(sensor_oxigenio, fora_da_faixa),!.
+      % Corte para garantir que falha no sensor de oxigênio seja priorizada.
 
 probabilidade(luz_check_engine, sistema_injecao_problema) :-
-    sintoma(luz_check_engine),
-    !.  % Se o Check Engine estiver aceso, verifica o sistema de injeção, mas o corte garante que seja priorizado.
+    sintoma(luz_check_engine).
+      % Se o Check Engine estiver aceso, verifica o sistema de injeção, mas o corte garante que seja priorizado.
 
 probabilidade(luz_bateria, alternador_defeito) :-
     sintoma(luz_bateria),
-    leitura_sensor(tensao_bateria, T), T < 12,
-    !.  % A falha do alternador é priorizada quando a tensão da bateria está baixa.
+    leitura_sensor(tensao_bateria, T), T < 12, !.
+      % A falha do alternador é priorizada quando a tensão da bateria está baixa.
 
 probabilidade(luz_bateria, correia_acessorios_rompida) :-
     sintoma(luz_bateria),
-    leitura_sensor(rotacao_motor, anormal),
-    !.  % Se a rotação do motor for anormal, a causa mais provável é a correia rompida.
+    leitura_sensor(rotacao_motor, anormal).
+      % Se a rotação do motor for anormal, a causa mais provável é a correia rompida.
 
 probabilidade(barulho_motor, falha_bielas) :-
     sintoma(barulho_motor),
-    leitura_sensor(sensor_vibracao, anormal),
-    !.  % Se o sensor de vibração for anormal, priorizamos falha nas bielas.
+    leitura_sensor(sensor_vibracao, anormal),!.
+      % Se o sensor de vibração for anormal, priorizamos falha nas bielas.
 
 probabilidade(barulho_motor, pistoes_problema) :-
-    sintoma(barulho_motor),
-    leitura_sensor(rotacao_motor, normal),
-    !.  % Se a rotação do motor for normal, então investigamos pistões.
+     leitura_sensor(rotacao_motor, normal),
+    \+ probabilidade(barulho_motor, falha_bielas).
+      % Se a rotação do motor for normal, então investigamos pistões.
 % Probabilidade de falha no sensor de oxigênio
-probabilidade(luz_check_engine, sensor_oxigenio_falha) :-
-    leitura_sensor(sensor_oxigenio, fora_da_faixa),
-    !.  % Corte para garantir que falha no sensor de oxigênio seja priorizada.
-
-% Probabilidade de problema no sistema de injeção
-probabilidade(luz_check_engine, sistema_injecao_problema) :-
-    sintoma(luz_check_engine),
-    !.  % Se a luz de Check Engine estiver acesa, verifica o sistema de injeção, mas o corte garante que seja priorizado.
-
-% Probabilidade de falha no alternador
-probabilidade(luz_bateria, alternador_defeito) :-
-    sintoma(luz_bateria),
-    leitura_sensor(tensao_bateria, T), T < 12,
-    !.  % A falha do alternador é priorizada quando a tensão da bateria está baixa.
-
-% Probabilidade de correia de acessórios rompida
-probabilidade(luz_bateria, correia_acessorios_rompida) :-
-    sintoma(luz_bateria),
-    leitura_sensor(rotacao_motor, anormal),
-    !.  % Se a rotação do motor for anormal, a causa mais provável é a correia rompida.
-
-% Probabilidade de falha nas bielas
-probabilidade(barulho_motor, falha_bielas) :-
-    sintoma(barulho_motor),
-    leitura_sensor(sensor_vibracao, anormal),
-    !.  % Se o sensor de vibração for anormal, priorizamos falha nas bielas.
-
-% Probabilidade de problema nos pistões
-probabilidade(barulho_motor, pistoes_problema) :-
-    sintoma(barulho_motor),
-    leitura_sensor(rotacao_motor, normal),
-    !.  % Se a rotação do motor for normal, então investigamos pistões.
 
 % Probabilidade de superaquecimento
 probabilidade(superaquecimento_motor, superaquecimento) :-
-    leitura_sensor(temperatura_motor, T), T > 100,
-    !.  % Corte para garantir que o superaquecimento seja priorizado.
+    leitura_sensor(temperatura_motor, T), T > 100,!.
+      % Corte para garantir que o superaquecimento seja priorizado.
 
 % Probabilidade de baixo nível de óleo
 probabilidade(superaquecimento_motor, vazamento_ou_falta_oleo) :-
-    leitura_sensor(nivel_oleo, N), N == baixo,
-    !.  % Se o nível de óleo estiver baixo, a causa mais provável é vazamento ou falta de troca.
+    leitura_sensor(nivel_oleo, N), N == baixo,!.
+      % Se o nível de óleo estiver baixo, a causa mais provável é vazamento ou falta de troca.
 
 % Probabilidade de falha no sensor de oxigênio em motor engasgado
 probabilidade(motor_engasgado, sensor_oxigenio_falha) :-
     leitura_sensor(sensor_oxigenio, ForaFaixa),
-    ForaFaixa == fora_da_faixa,
-    !.  % Se o sensor de oxigênio estiver fora da faixa, prioriza-se falha do sensor.
+    ForaFaixa == fora_da_faixa,!.
+      % Se o sensor de oxigênio estiver fora da faixa, prioriza-se falha do sensor.
 
 % Probabilidade de problema de injeção no motor engasgado
 probabilidade(motor_engasgado, problema_injecao) :-
-    sintoma(luz_check_engine),
-    !.  % Se a luz de Check Engine estiver acesa, é prioritário verificar o sistema de injeção eletrônica.
+    sintoma(luz_check_engine).
+      % Se a luz de Check Engine estiver acesa, é prioritário verificar o sistema de injeção eletrônica.
 
 % Probabilidade de falha nas bielas em ruídos do motor
 probabilidade(ruidos_motor, falha_bielas) :-
     sintoma(barulho_motor),
-    leitura_sensor(sensor_vibracao, anormal),
-    !.  % Se o sensor de vibração for anormal, prioriza-se falha nas bielas.
+    leitura_sensor(sensor_vibracao, anormal), !.
+      % Se o sensor de vibração for anormal, prioriza-se falha nas bielas.
+% Probabilidade de problema na transmissão
+probabilidade(perda_potencia, problema_transmissao) :-
+    leitura_sensor(sensor_vibracao, anormal).
 
+probabilidade(ruidos_motor, problema_transmissao) :-
+    leitura_sensor(sensor_vibracao, anormal). 
+
+% Probabilidade de falha nos pistões (prioridade menor que bielas)
+probabilidade(barulho_motor, pistoes_problema) :-
+    leitura_sensor(rotacao_motor, normal),
+    \+ probabilidade(barulho_motor, falha_bielas),!.
 % Diagnóstico usando as probabilidades
 diagnostico(Sintoma, Causa) :-
-    sintoma(Sintoma),
-    probabilidade(Sintoma, Causa),  % Aqui usamos a probabilidade para determinar a causa mais provável
-    !.  % O corte impede backtracking para soluções não prioritárias.
+    probabilidade(Sintoma, Causa).
 
-% Caso não encontre a causa principal, tenta uma outra abordagem
-diagnostico(Sintoma, Causa) :-
-    sintoma(Sintoma),
-    causa(Sintoma, Causa).
 
-% Diagnóstico com múltiplos sintomas combinados
 diagnosticar :-
-    write('Digite o sintoma(s) observado(s) (ex: falha_ignicao, luz_check_engine, luz_bateria, barulho_motor): '),
-    read(Sintoma),
-    (   sintoma(Sintoma)
-    ->  findall(Causa, diagnostico(Sintoma, Causa), Causas),
-        (   Causas \= []
-        ->  write('Diagnóstico baseado no sintoma: '), nl,
-            listar_resultados(Causas)
-        ;   write('Nenhuma causa identificada para o sintoma informado.'), nl
-        )
-    ;   write('Sintoma não reconhecido.'), nl
+    % Solicita os sintomas observados
+    write('Digite os sintomas observados como uma lista (exemplo: [falha_ignicao, luz_check_engine]): '),
+    read(Sintomas),
+    % Verifica sintomas válidos e inválidos
+    verificar_sintomas(Sintomas, SintomasValidos, SintomasInvalidos),
+    % Exibe mensagem para sintomas inválidos
+    (SintomasInvalidos \= [] ->
+        format('Os seguintes sintomas não foram reconhecidos e serão ignorados: ~w\n', [SintomasInvalidos]);
+        true
     ),
-    % Verifica se há diagnóstico combinado
-    write('Deseja verificar um diagnóstico combinado? (sim/nao): '),
-    read(Resposta),
-    (   Resposta == sim
-    ->  write('Digite o segundo sintoma observado: '),
-        read(Sintoma2),
-        (   sintoma(Sintoma2)
-        ->  diagnostico_combinado(Sintoma, Sintoma2, CausaCombinada),
-            (   CausaCombinada \= []
-            ->  write('Diagnóstico combinado: '), nl,
-                listar_resultados([CausaCombinada])
-            ;   write('Nenhuma causa combinada identificada para os sintomas informados.'), nl
-            )
-        ;   write('Segundo sintoma não reconhecido.'), nl
-        )
-    ;   write('Nenhum diagnóstico combinado será realizado.'), nl
+    % Diagnosticar com sintomas válidos
+    (SintomasValidos \= [] ->
+        diagnostico_combinado(SintomasValidos);
+        write('Nenhum sintoma válido foi fornecido.\n')
     ).
 
-% Listar as causas e ações corretivas
-listar_resultados([]).
-listar_resultados([Causa | T]) :-
-    format('Causa provável: ~w~n', [Causa]),
-    acao(Causa, Acoes),
-    format('Ações corretivas: ~w~n~n', [Acoes]),
-    explicacao(Causa, Explicacao),
-    format('Explicação: ~w~n~n', [Explicacao]),
-    listar_resultados(T).
+% Diagnóstico combinado priorizado para múltiplos sintomas
+diagnostico_combinado(Sintomas) :-
+    findall([Sintoma, Diagnosticos], (
+        member(Sintoma, Sintomas),
+        diagnostico_prioritario(Sintoma, Diagnosticos)
+    ), Resultados),
+    listar_diagnosticos(Resultados).
+
+% Listar diagnósticos com causas principais e alternativas
+listar_diagnosticos([]).
+listar_diagnosticos([[Sintoma, [CausaPrincipal | Alternativas]] | Resto]) :-
+    format('Sintoma analisado: ~w\n', [Sintoma]),
+    format('Causa principal: ~w\n', [CausaPrincipal]),
+    acao(CausaPrincipal, AcaoPrincipal),
+    format('Ação sugerida: ~w\n', [AcaoPrincipal]),
+    explicacao(CausaPrincipal, ExplicacaoPrincipal),
+    format('Explicação: ~w\n', [ExplicacaoPrincipal]),
+    (Alternativas = [] ->
+        write('Não há segunda possibilidade para este sintoma.\n\n');
+        listar_alternativas(Alternativas)
+    ),
+    listar_diagnosticos(Resto).
+
+% Listar alternativas para um diagnóstico
+listar_alternativas([]) :- !.  % Não exibe mensagem se não houver alternativas.
+listar_alternativas([Alternativa | Outras]) :-
+    format('Alternativa: ~w\n', [Alternativa]),
+    acao(Alternativa, AcaoAlternativa),
+    format('Ação sugerida: ~w\n', [AcaoAlternativa]),
+    explicacao(Alternativa, ExplicacaoAlternativa),
+    format('Explicação: ~w\n\n', [ExplicacaoAlternativa]),
+    listar_alternativas(Outras).
+
+% Diagnóstico priorizado com causas e alternativas
+diagnostico_prioritario(Sintoma, [CausaPrincipal | Alternativas]) :-
+    sintoma(Sintoma),
+    findall(Causa, probabilidade(Sintoma, Causa), Causas),
+    (Causas \= [] ->
+        [CausaPrincipal | Alternativas] = Causas;
+        findall(CausaGeral, causa(Sintoma, CausaGeral), TodasCausas),
+        sort(TodasCausas, [CausaPrincipal | Alternativas])
+    ).
+
+% Verifica sintomas válidos e inválidos
+verificar_sintomas([], [], []).
+verificar_sintomas([Sintoma | Resto], [Sintoma | Validos], Invalidos) :-
+    sintoma(Sintoma), !,
+    verificar_sintomas(Resto, Validos, Invalidos).
+verificar_sintomas([Sintoma | Resto], Validos, [Sintoma | Invalidos]) :-
+    \+ sintoma(Sintoma),
+    verificar_sintomas(Resto, Validos, Invalidos).
+
 % Justificativas para "Por que não?"
 justificar(Sintoma, Causa) :-
     probabilidade(Sintoma, Causa),
@@ -247,8 +255,8 @@ justificar(Sintoma, OutraCausa) :-
     format('A causa ~w foi descartada para ~w porque não atende às condições dos sensores.\n', [OutraCausa, Sintoma]).
 
     % Casos de teste
-caso_teste(1, [falha_ignicao, luz_bateria], [bateria_fraca]).
-caso_teste(2, [superaquecimento_motor, luz_check_engine], [superaquecimento, sensor_oxigenio_falha]).
+caso_teste(1, [falha_ignicao, luz_bateria], [alternador_defeito,bateria_fraca]).
+caso_teste(2, [superaquecimento_motor, luz_check_engine], [sensor_oxigenio_falha, superaquecimento]).
 caso_teste(3, [motor_engasgado, luz_check_engine], [sensor_oxigenio_falha, sistema_injecao_problema]).
 caso_teste(4, [ruidos_motor, perda_potencia], [falha_bielas, problema_transmissao]).
 
@@ -267,31 +275,3 @@ executar_teste(Caso) :-
 % Executar todos os testes
 executar_todos_testes :-
     forall(caso_teste(Caso, _, _), executar_teste(Caso)).
-% Diagnóstico explicativo
-diagnosticar_explicativo(Sintoma) :-
-    sintoma(Sintoma),
-    findall(Causa, diagnostico(Sintoma, Causa), Causas),
-    (Causas \= [] ->
-        format('Sintoma identificado: ~w\n', [Sintoma]),
-        listar_causas_explicativas(Causas);
-        format('Nenhuma causa identificada para o sintoma ~w.\n', [Sintoma])).
-
-% Listar causas com justificativas
-listar_causas_explicativas([]).
-listar_causas_explicativas([Causa | T]) :-
-    format('Causa provável: ~w\n', [Causa]),
-    acao(Causa, Acao),
-    format('Ação sugerida: ~w\n', [Acao]),
-    explicacao(Causa, Explicacao),
-    format('Explicação: ~w\n\n', [Explicacao]),
-    listar_causas_explicativas(T).
-
-% Executar diagnóstico completo com justificativas para múltiplos sintomas
-diagnosticar_completo :-
-    write('Digite os sintomas observados (como uma lista, ex: [falha_ignicao, luz_bateria]): '),
-    read(Sintomas),
-    diagnostico_combinado(Sintomas, Diagnosticos),
-    (Diagnosticos \= [] ->
-        format('Sintomas analisados: ~w\n', [Sintomas]),
-        listar_causas_explicativas(Diagnosticos);
-        write('Nenhuma causa combinada identificada para os sintomas informados.\n')).
