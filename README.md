@@ -1,11 +1,18 @@
 Reconhecimentos e Direitos Autorais
+
 @autor: Emanuel Lopes Silva, Letícia Delfino De Araujo, Thales Aymar Fortes De Souza , José Nunes de Souza Neto.
+
 @contato: emanuel.silva@discente.ufma.br
+
 @data última versão: 28/01/2025
+
 @versão: 1.0
+
 @outros repositórios: 
 https://github.com/EmanuelSilva69, https://github.com/lwticias-lelet, https://github.com/ThalesAymar  
+
 @Agradecimentos: Universidade Federal do Maranhão (UFMA), Professor Doutor Thales Levi Azevedo Valente, e colegas de curso.
+
 
 Copyright/License
 Este material é resultado de um trabalho acadêmico para a disciplina "Inteligência Artificial", sob a orientação do professor Dr. THALES LEVI AZEVEDO VALENTE, semestre letivo 2024.2, curso Engenharia da Computação, na Universidade Federal do Maranhão (UFMA). Todo o material sob esta licença é software livre: pode ser usado para fins acadêmicos e comerciais sem nenhum custo. Não há papelada, nem royalties, nem restrições de "copyleft" do tipo GNU. Ele é licenciado sob os termos da Licença MIT, conforme descrito abaixo, e, portanto, é compatível com a GPL e também se qualifica como software de código aberto. É de domínio público. Os detalhes legais estão abaixo. O espírito desta licença é que você é livre para usar este material para qualquer finalidade, sem nenhum custo. O único requisito é que, se você usá-los, nos dê crédito.
