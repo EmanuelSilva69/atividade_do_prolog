@@ -1,5 +1,16 @@
 % Base de sintomas, sensores e diagnósticos
-
+%temos a possibilidade de botar os valores dinâmicos né? vou botar aqui por segurança 
+:- dynamic(bateria/1).
+:- dynamic(temperatura_motor/1).
+:- dynamic(nivel_oleo/1).
+:- dynamic(sensor_oxigenio/1).
+:- dynamic(rotacao_motor/1).
+:- dynamic(sensor_vibracao/1).
+:- dynamic(luz_check_engine/0).
+:- dynamic(luz_bateria/0).
+:- dynamic(falha_ignicao/0).
+:- dynamic(barulho_incomum/0).
+:- dynamic(perda_potencia/0).
 % Sintomas básicos
 sintoma(falha_ignicao).
 sintoma(luz_check_engine).
@@ -257,7 +268,7 @@ justificar(Sintoma, OutraCausa) :-
     % Casos de teste
 caso_teste(1, [falha_ignicao, luz_bateria], [alternador_defeito,bateria_fraca]).
 caso_teste(2, [superaquecimento_motor, luz_check_engine], [sensor_oxigenio_falha, superaquecimento]).
-caso_teste(3, [motor_engasgado, luz_check_engine], [sensor_oxigenio_falha, sistema_injecao_problema]).
+caso_teste(3, [motor_engasgado, luz_check_engine], [sensor_oxigenio_falha]).% Sempre vai ser só "sensor_oxigenio falha" pois o valor o do oxigênio tá alterado, n tem pra que botar outro sintoma , que seja o problema na falha da injeção, ai. A MENOS QUE ALTERE os dados, ai vai aaprecer sistema de injeção, mas esse comentário tá aqui pra isso
 caso_teste(4, [ruidos_motor, perda_potencia], [falha_bielas, problema_transmissao]).
 
 % Executar um único teste
