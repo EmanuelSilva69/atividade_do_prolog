@@ -9,7 +9,7 @@ Reconhecimentos e Direitos Autorais
 @versão: 1.0
 
 @outros repositórios: 
-https://github.com/EmanuelSilva69, https://github.com/lwticias-lelet, https://github.com/ThalesAymar  
+https://github.com/EmanuelSilva69, https://github.com/lwticias-lelet, https://github.com/ThalesAymar, https://github.com/ZuzaNeto
 
 @Agradecimentos: Universidade Federal do Maranhão (UFMA), Professor Doutor Thales Levi Azevedo Valente, e colegas de curso.
 
