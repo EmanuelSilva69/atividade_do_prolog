@@ -41,7 +41,9 @@ causa(ruidos_motor, problema_transmissao).
 
 causa(perda_potencia, problema_transmissao).
 causa(perda_potencia, falha_injecao).
-
+causa(superaquecimento_motor,superaquecimento).
+causa(motor_engasgado, problema_injecao).
+causa(motor_engasgado, falha_combustivel).
 
 
 
@@ -72,6 +74,8 @@ acao(pistoes_problema, inspecionar_pistoes).
 acao(problema_bateria_ou_alternador, verificar_bateria_e_alternador).
 acao(problema_ignicao_ou_injecao, verificar_ignicao_ou_injecao).
 acao(problema_motor, verificar_motor).
+acao(problema_transmissao, trocar_transmissao).
+acao(superaquecimento,esfriar_motor).
 
 % Explicações do diagnóstico
 explicacao(bateria_fraca, "A tensão da bateria está abaixo de 12V.").
@@ -83,6 +87,15 @@ explicacao(correia_acessorios_rompida, "A rotação do motor é anormal, indican
 explicacao(problema_bateria_ou_alternador, "A falha pode ser tanto na bateria quanto no alternador. Verifique ambos para determinar a causa.").
 explicacao(problema_ignicao_ou_injecao, "Há uma falha de ignição ou um problema no sistema de injeção eletrônica.").
 explicacao(problema_motor, "O problema pode ser causado por falha nas bielas ou pistões.").
+explicacao(problema_transmissao, "O problema está na transmissão do carro, é bom trocar.").
+explicacao(sensor_virabrequim_problema, "O sensor de virabrequim está apresentando falhas e pode precisar ser substituído.").
+explicacao(catalisador_problema, "O catalisador pode estar entupido ou com falhas, afetando o desempenho do motor.").
+explicacao(falha_bielas, "As bielas estão com falhas, o que pode causar barulhos incomuns no motor.").
+explicacao(pistoes_problema, "Os pistões apresentam problemas, o que pode afetar o funcionamento do motor.").
+explicacao(falha_injecao, "A injeção está apresentando problemas, prejudicando o desempenho do motor.").
+explicacao(superaquecimento,"O motor está MUITO quente. Espere um pouco até ele esfriar.").
+explicacao(problema_injecao, "Há um problema no sistema de injeção eletrônica que está afetando o motor.").
+explicacao(falha_combustivel, "Há uma falha no sistema de combustível, possivelmente devido à falta ou má qualidade do combustível.").
 % Sensores disponíveis
 sensor(temperatura_motor).
 sensor(tensao_bateria).
@@ -151,7 +164,7 @@ probabilidade(superaquecimento_motor, superaquecimento) :-
 
 % Probabilidade de baixo nível de óleo
 probabilidade(superaquecimento_motor, vazamento_ou_falta_oleo) :-
-    leitura_sensor(nivel_oleo, N), N == baixo,!.
+    leitura_sensor(nivel_oleo, N), N == baixo.
       % Se o nível de óleo estiver baixo, a causa mais provável é vazamento ou falta de troca.
 
 % Probabilidade de falha no sensor de oxigênio em motor engasgado
@@ -212,38 +225,46 @@ diagnostico_combinado(Sintomas) :-
     listar_diagnosticos(Resultados).
 
 % Listar diagnósticos com causas principais e alternativas
+% Listar diagnósticos com causas principais e alternativas
 listar_diagnosticos([]).
-listar_diagnosticos([[Sintoma, [CausaPrincipal | Alternativas]] | Resto]) :-
-    format('Sintoma analisado: ~w\n', [Sintoma]),
-    format('Causa principal: ~w\n', [CausaPrincipal]),
-    acao(CausaPrincipal, AcaoPrincipal),
-    format('Ação sugerida: ~w\n', [AcaoPrincipal]),
-    explicacao(CausaPrincipal, ExplicacaoPrincipal),
-    format('Explicação: ~w\n', [ExplicacaoPrincipal]),
-    (Alternativas = [] ->
-        write('Não há segunda possibilidade para este sintoma.\n\n');
-        listar_alternativas(Alternativas)
+listar_diagnosticos([[Sintoma, Diagnosticos] | Resto]) :-
+    (Diagnosticos = [CausaPrincipal | Alternativas] ->
+        % Exibe a causa principal
+        format('Sintoma analisado: ~w\n', [Sintoma]),
+        format('Causa principal: ~w\n', [CausaPrincipal]),
+        (acao(CausaPrincipal, AcaoPrincipal) ->
+            format('Ação sugerida: ~w\n', [AcaoPrincipal]);
+            write('Nenhuma ação sugerida disponível para esta causa.\n')),
+        (explicacao(CausaPrincipal, ExplicacaoPrincipal) ->
+            format('Explicação: ~w\n\n', [ExplicacaoPrincipal]);
+            write('Nenhuma explicação disponível para esta causa.\n')),
+        % Exibe as alternativas
+        listar_alternativas(Alternativas);
+        % Caso nenhum diagnóstico seja encontrado
+        format('Sintoma analisado: ~w\nNenhuma causa encontrada para este sintoma.\n\n', [Sintoma])
     ),
     listar_diagnosticos(Resto).
 
 % Listar alternativas para um diagnóstico
-listar_alternativas([]) :- !.  % Não exibe mensagem se não houver alternativas.
+listar_alternativas([]).
 listar_alternativas([Alternativa | Outras]) :-
     format('Alternativa: ~w\n', [Alternativa]),
-    acao(Alternativa, AcaoAlternativa),
-    format('Ação sugerida: ~w\n', [AcaoAlternativa]),
-    explicacao(Alternativa, ExplicacaoAlternativa),
-    format('Explicação: ~w\n\n', [ExplicacaoAlternativa]),
+    (acao(Alternativa, AcaoAlternativa) ->
+        format('Ação sugerida: ~w\n', [AcaoAlternativa]);
+        write('Nenhuma ação sugerida disponível para esta alternativa.\n')),
+    (explicacao(Alternativa, ExplicacaoAlternativa) ->
+        format('Explicação: ~w\n\n', [ExplicacaoAlternativa]);
+        write('Nenhuma explicação disponível para esta alternativa.\n')),
     listar_alternativas(Outras).
 
 % Diagnóstico priorizado com causas e alternativas
-diagnostico_prioritario(Sintoma, [CausaPrincipal | Alternativas]) :-
+diagnostico_prioritario(Sintoma, Diagnosticos) :-
     sintoma(Sintoma),
     findall(Causa, probabilidade(Sintoma, Causa), Causas),
     (Causas \= [] ->
-        [CausaPrincipal | Alternativas] = Causas;
+        Diagnosticos = Causas;  % Usa todas as causas retornadas por probabilidade/2
         findall(CausaGeral, causa(Sintoma, CausaGeral), TodasCausas),
-        sort(TodasCausas, [CausaPrincipal | Alternativas])
+        sort(TodasCausas, Diagnosticos)
     ).
 
 % Verifica sintomas válidos e inválidos
